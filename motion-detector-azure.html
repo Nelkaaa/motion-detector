@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Detector</title>
+    <title>Motion Detector to Azure</title>
     <style>
         * {
             margin: 0;
@@ -15,314 +15,352 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-            color: #333;
         }
         .container {
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
-        }
-        .card {
             background: white;
             border-radius: 20px;
             padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         h1 {
             color: #667eea;
-            font-size: 24px;
-            margin-bottom: 20px;
             text-align: center;
+            margin-bottom: 10px;
+            font-size: 26px;
         }
-        h2 {
-            color: #764ba2;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-        .btn {
-            width: 100%;
-            padding: 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
-            color: white;
-        }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .btn-start {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-        }
-        .btn-stop {
-            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
-        }
-        .hidden {
-            display: none;
-        }
-        .detection {
-            background: #f8f9fa;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+        .subtitle {
             text-align: center;
-        }
-        .detection-label {
-            font-size: 16px;
             color: #666;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
-        .detection-value {
-            font-size: 48px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .detection-value.shake {
-            color: #f44336;
-        }
-        .detection-value.tap {
-            color: #2196F3;
-        }
-        .detection-value.still {
-            color: #4CAF50;
-        }
-        .confidence {
-            font-size: 24px;
-            color: #764ba2;
-            font-weight: 600;
-        }
-        .log {
+        .card {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 10px;
-            max-height: 300px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .card-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+        .btn-success {
+            background: #43e97b;
+            color: white;
+        }
+        .btn-danger {
+            background: #f5576c;
+            color: white;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+            display: block;
+        }
+        .detection-display {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .log {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 150px;
             overflow-y: auto;
+            font-size: 11px;
             font-family: monospace;
-            font-size: 12px;
         }
         .log-entry {
-            margin-bottom: 8px;
-            padding: 8px;
-            border-left: 4px solid #667eea;
-            padding-left: 12px;
-            background: white;
+            margin: 3px 0;
+            padding: 3px;
+            border-left: 2px solid #667eea;
+            padding-left: 8px;
         }
-        .log-entry.error {
-            border-left-color: #dc3545;
-            color: #dc3545;
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
         }
-        .log-entry.success {
-            border-left-color: #28a745;
-            color: #28a745;
+        .stat-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
         }
-        .log-entry.info {
-            border-left-color: #17a2b8;
-            color: #17a2b8;
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <h1>Motion Detector + Azure</h1>
+        <p class="subtitle">AI-Powered Motion Detection to Cloud</p>
+
         <div class="card">
-            <h1>Motion Detector + Azure IoT</h1>
-            
-            <button id="startBtn" class="btn btn-start">Start Detection</button>
-            <button id="stopBtn" class="btn btn-stop hidden">Stop Detection</button>
-
-            <div class="detection">
-                <div class="detection-label">Current Motion</div>
-                <div class="detection-value" id="motionLabel">WAITING</div>
-                <div class="confidence" id="confidenceLabel">--</div>
-            </div>
-
-            <h2>Activity Log</h2>
-            <div class="log" id="activityLog"></div>
+            <div class="card-title">Motion Detection</div>
+            <button class="btn-success" id="startBtn" onclick="startDetection()">Start Detection</button>
+            <button class="btn-danger" id="stopBtn" onclick="stopDetection()" style="display:none;">Stop Detection</button>
         </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="detection-display" id="detectionDisplay">
+            Waiting to start...
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="shakeCount">0</div>
+                <div class="stat-label">Shakes</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="tapCount">0</div>
+                <div class="stat-label">Taps</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="stillCount">0</div>
+                <div class="stat-label">Still</div>
+            </div>
+        </div>
+
+        <div class="log" id="log"></div>
     </div>
 
+    <!-- Load Edge Impulse Model -->
     <script src="edge-impulse-standalone.js"></script>
     <script src="run-impulse.js"></script>
+
     <script>
-        // Configuration
+        // Azure Function URL
         const AZURE_FUNCTION_URL = 'https://motion-detector-iot-a8bef2dyc4hybmhh.francecentral-01.azurewebsites.net/api/motion-forwarder?code=7n6cOhFAP4lcIKCqXx1H4pVgB2AS5i0uxrnCchgoZHFaAzFuOagdLQ==';
-        const CONFIDENCE_THRESHOLD = 0.70;
-        const WINDOW_SIZE = 180;
+        
+        // Motion Detection
+        let classifier;
+        let isDetecting = false;
+        let motionData = [];
+        const WINDOW_SIZE = 180; // 3 seconds at 60Hz
+        let lastMotion = 'still';
+        let motionCounts = { shake: 0, tap: 0, still: 0 };
+        let messagesSent = 0;
 
-        // State
-        let classifier = null;
-        let isRunning = false;
-        let motionBuffer = [];
-        let lastSentMotion = null;
+        async function startDetection() {
+            try {
+                addLog('Loading Edge Impulse model...');
+                showStatus('Loading model...', 'info');
 
-        // UI Elements
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const motionLabel = document.getElementById('motionLabel');
-        const confidenceLabel = document.getElementById('confidenceLabel');
-        const activityLog = document.getElementById('activityLog');
+                classifier = new EdgeImpulseClassifier();
+                await classifier.init();
+                
+                addLog('Model loaded successfully');
+                showStatus('Model loaded! Starting detection...', 'success');
 
-        // Add log entry
-        function addLog(message, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            const timestamp = new Date().toLocaleTimeString();
-            entry.textContent = `[${timestamp}] ${message}`;
-            activityLog.insertBefore(entry, activityLog.firstChild);
-            
-            while (activityLog.children.length > 30) {
-                activityLog.removeChild(activityLog.lastChild);
+                // Request motion sensor permission
+                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    if (permission !== 'granted') {
+                        showStatus('Motion permission denied', 'error');
+                        return;
+                    }
+                }
+
+                isDetecting = true;
+                motionData = [];
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+                document.getElementById('detectionDisplay').textContent = 'Detecting...';
+                
+                addLog('Motion detection started');
+                showStatus('Detecting motion...', 'info');
+
+                // Start listening to motion events
+                window.addEventListener('devicemotion', handleMotion);
+                
+            } catch (error) {
+                addLog('ERROR: ' + error.message);
+                showStatus('Error: ' + error.message, 'error');
             }
         }
 
-        // Update UI
-        function updateUI(motion, confidence) {
-            motionLabel.textContent = motion.toUpperCase();
-            motionLabel.className = `detection-value ${motion}`;
-            confidenceLabel.textContent = `${Math.round(confidence * 100)}%`;
+        function stopDetection() {
+            isDetecting = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('detectionDisplay').textContent = 'Stopped';
+            
+            addLog('Motion detection stopped');
+            showStatus('Stopped', 'info');
         }
 
-        // Send to Azure
+        function handleMotion(event) {
+            if (!isDetecting) return;
+
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+
+            // Collect data (x, y, z)
+            motionData.push(acc.x || 0, acc.y || 0, acc.z || 0);
+
+            // When we have enough data, classify
+            if (motionData.length >= WINDOW_SIZE) {
+                classifyMotion();
+                // Slide window (keep last 50% of data)
+                motionData = motionData.slice(Math.floor(WINDOW_SIZE / 2));
+            }
+        }
+
+        async function classifyMotion() {
+            try {
+                const result = classifier.classify(motionData, false);
+                
+                // Find highest confidence result
+                let maxResult = result.results[0];
+                for (let r of result.results) {
+                    if (r.value > maxResult.value) {
+                        maxResult = r;
+                    }
+                }
+
+                const motion = maxResult.label;
+                const confidence = (maxResult.value * 100).toFixed(1);
+
+                // Update display
+                document.getElementById('detectionDisplay').textContent = 
+                    `${motion.toUpperCase()} (${confidence}%)`;
+
+                // Only send if motion changed and confidence > 70%
+                if (motion !== lastMotion && maxResult.value > 0.7) {
+                    lastMotion = motion;
+                    motionCounts[motion]++;
+                    
+                    // Update counts
+                    document.getElementById('shakeCount').textContent = motionCounts.shake;
+                    document.getElementById('tapCount').textContent = motionCounts.tap;
+                    document.getElementById('stillCount').textContent = motionCounts.still;
+                    
+                    // Send to Azure via Function
+                    await sendToAzure(motion, maxResult.value);
+                }
+                
+            } catch (error) {
+                addLog('Classification error: ' + error.message);
+            }
+        }
+
         async function sendToAzure(motion, confidence) {
             try {
-                addLog(`Sending ${motion.toUpperCase()} to Azure...`, 'info');
-                
+                const message = {
+                    motion: motion,
+                    confidence: confidence,
+                    timestamp: new Date().toISOString(),
+                    messageId: ++messagesSent
+                };
+
+                addLog(`Sending: ${motion} (${(confidence*100).toFixed(0)}%)`);
+
                 const response = await fetch(AZURE_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        motion: motion,
-                        confidence: confidence,
-                        timestamp: new Date().toISOString(),
-                        messageId: Date.now()
-                    })
+                    body: JSON.stringify(message)
                 });
 
                 if (response.ok) {
-                    const result = await response.json();
-                    addLog(`SUCCESS: ${motion.toUpperCase()} sent to Azure IoT Hub`, 'success');
-                    return true;
+                    addLog(`SUCCESS: Sent ${motion} #${messagesSent} to Azure`);
                 } else {
-                    const error = await response.text();
-                    addLog(`ERROR: Failed to send (${response.status})`, 'error');
-                    return false;
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            } catch (error) {
-                addLog(`ERROR: ${error.message}`, 'error');
-                return false;
-            }
-        }
-
-        // Process classification
-        function processClassification(result) {
-            if (!result || !result.result || !result.result.classification) {
-                return;
-            }
-
-            const classification = result.result.classification;
-            let maxConfidence = 0;
-            let detectedMotion = 'still';
-
-            for (const [motion, confidence] of Object.entries(classification)) {
-                if (confidence > maxConfidence) {
-                    maxConfidence = confidence;
-                    detectedMotion = motion;
-                }
-            }
-
-            // Always update UI to show current detection
-            updateUI(detectedMotion, maxConfidence);
-            addLog(`Detected: ${detectedMotion.toUpperCase()} (${Math.round(maxConfidence * 100)}%)`);
-
-            // Send to Azure if confidence high enough and motion changed
-            if (maxConfidence >= CONFIDENCE_THRESHOLD && detectedMotion !== lastSentMotion) {
-                sendToAzure(detectedMotion, maxConfidence);
-                lastSentMotion = detectedMotion;
-            }
-        }
-
-        // Handle motion
-        function handleMotion(event) {
-            if (!isRunning) return;
-
-            const { accelerationIncludingGravity } = event;
-            if (!accelerationIncludingGravity) return;
-
-            motionBuffer.push([
-                accelerationIncludingGravity.x || 0,
-                accelerationIncludingGravity.y || 0,
-                accelerationIncludingGravity.z || 0
-            ]);
-
-            if (motionBuffer.length > WINDOW_SIZE) {
-                motionBuffer.shift();
-            }
-
-            if (motionBuffer.length === WINDOW_SIZE) {
-                const features = motionBuffer.flat();
-                classifier.classify(features, processClassification);
-            }
-        }
-
-        // Start detection
-        async function startDetection() {
-            try {
-                addLog('Loading Edge Impulse model...');
-
-                classifier = new EdgeImpulseClassifier();
-                await classifier.init();
-                
-                addLog('Model loaded successfully', 'success');
-
-                if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission !== 'granted') {
-                        throw new Error('Motion permission denied');
-                    }
-                }
-
-                motionBuffer = [];
-                lastSentMotion = null;
-                isRunning = true;
-                window.addEventListener('devicemotion', handleMotion);
-                
-                addLog('Detection started - Move your phone!', 'success');
-                
-                startBtn.classList.add('hidden');
-                stopBtn.classList.remove('hidden');
 
             } catch (error) {
-                addLog(`ERROR: ${error.message}`, 'error');
+                addLog('Send failed: ' + error.message);
             }
         }
 
-        // Stop detection
-        function stopDetection() {
-            isRunning = false;
-            window.removeEventListener('devicemotion', handleMotion);
-            motionBuffer = [];
-            lastSentMotion = null;
-            
-            addLog('Detection stopped');
-            
-            motionLabel.textContent = 'STOPPED';
-            motionLabel.className = 'detection-value';
-            confidenceLabel.textContent = '--';
-            
-            startBtn.classList.remove('hidden');
-            stopBtn.classList.add('hidden');
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
         }
 
-        startBtn.addEventListener('click', startDetection);
-        stopBtn.addEventListener('click', stopDetection);
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${time}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
 
+        // Initial log
         addLog('Ready! Click Start Detection to begin.');
     </script>
 </body>
 </html>
+
 
