@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Detector → Azure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 26px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .card-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            resize: vertical;
+            min-height: 70px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #43e97b;
+            color: white;
+        }
+        .btn-danger {
+            background: #f5576c;
+            color: white;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #bee5eb;
+            display: block;
+        }
+        .detection-display {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .log {
+            margin-top: 15px;
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: monospace;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 3px;
+            border-left: 2px solid #667eea;
+            padding-left: 8px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Motion Detector + Azure</h1>
+        <p class="subtitle">AI-Powered Motion Detection → Cloud</p>
+
+        <!-- Step 1: Azure Connection -->
+        <div class="card">
+            <div class="card-title">Step 1: Connect to Azure IoT Hub</div>
+            <label>Device Connection String:</label>
+            <textarea id="connectionString" placeholder="HostName=motion-hub-noha.azure-devices.net;DeviceId=my-phone;SharedAccessKey=..."></textarea>
+            <button class="btn-primary" onclick="setupAzure()">Connect to Azure</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <!-- Step 2: Motion Detection (hidden until Azure connected) -->
+        <div id="detectionSection" style="display: none;">
+            <div class="card">
+                <div class="card-title">Step 2: Start Motion Detection</div>
+                <button class="btn-success" id="startBtn" onclick="startDetection()">🚀 Start Detection</button>
+                <button class="btn-danger" id="stopBtn" onclick="stopDetection()" style="display:none;">⏹️ Stop Detection</button>
+            </div>
+
+            <div class="detection-display" id="detectionDisplay">
+                Waiting to start...
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="shakeCount">0</div>
+                    <div class="stat-label">Shakes</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="tapCount">0</div>
+                    <div class="stat-label">Taps</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="stillCount">0</div>
+                    <div class="stat-label">Still</div>
+                </div>
+            </div>
+
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <!-- Load CryptoJS for Azure authentication -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <!-- Load Edge Impulse Model -->
+    <script src="edge-impulse-standalone.js"></script>
+    <script src="run-impulse.js"></script>
+
+    <script>
+        // Azure Configuration
+        let deviceId, hostname, sasToken;
+        let messagesSent = 0;
+        
+        // Motion Detection
+        let classifier;
+        let isDetecting = false;
+        let motionData = [];
+        const WINDOW_SIZE = 180; // 3 seconds at 60Hz (adjust based on your model)
+        let lastMotion = 'still';
+        let motionCounts = { shake: 0, tap: 0, still: 0 };
+
+        // Azure Setup
+        function parseConnectionString(connStr) {
+            const parts = {};
+            connStr.split(';').forEach(part => {
+                const [key, value] = part.split('=');
+                if (key && value) parts[key] = value;
+            });
+            return parts;
+        }
+
+        function generateSasToken(resourceUri, key, expiryInMinutes = 60) {
+            const moment = Math.floor(Date.now() / 1000);
+            const expiry = moment + (expiryInMinutes * 60);
+            const stringToSign = encodeURIComponent(resourceUri) + '\n' + expiry;
+            const signature = CryptoJS.HmacSHA256(stringToSign, CryptoJS.enc.Base64.parse(key));
+            const signatureBase64 = CryptoJS.enc.Base64.stringify(signature);
+            return `SharedAccessSignature sr=${encodeURIComponent(resourceUri)}&sig=${encodeURIComponent(signatureBase64)}&se=${expiry}`;
+        }
+
+        async function setupAzure() {
+            const connStr = document.getElementById('connectionString').value.trim();
+            
+            if (!connStr) {
+                showStatus('Please paste your connection string!', 'error');
+                return;
+            }
+
+            try {
+                const parts = parseConnectionString(connStr);
+                hostname = parts.HostName;
+                deviceId = parts.DeviceId;
+                const sharedAccessKey = parts.SharedAccessKey;
+
+                if (!hostname || !deviceId || !sharedAccessKey) {
+                    throw new Error('Invalid connection string');
+                }
+
+                const resourceUri = `${hostname}/devices/${deviceId}`;
+                sasToken = generateSasToken(resourceUri, sharedAccessKey, 60);
+
+                showStatus('✅ Azure connected! Now initialize Edge Impulse model...', 'success');
+                addLog('✓ Connected to Azure IoT Hub');
+                
+                // Initialize Edge Impulse
+                await initEdgeImpulse();
+                
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+                addLog('✗ ' + error.message);
+            }
+        }
+
+        async function initEdgeImpulse() {
+            try {
+                classifier = new EdgeImpulseClassifier();
+                await classifier.init();
+                
+                const projectInfo = classifier.getProjectInfo();
+                addLog(`✓ Model loaded: ${projectInfo.project_name}`);
+                addLog(`✓ Model owner: ${projectInfo.project_owner}`);
+                
+                showStatus('✅ Everything ready! Click "Start Detection"', 'success');
+                document.getElementById('detectionSection').style.display = 'block';
+                
+            } catch (error) {
+                showStatus('❌ Model error: ' + error.message, 'error');
+                addLog('✗ Failed to load model: ' + error.message);
+            }
+        }
+
+        async function startDetection() {
+            if (!classifier || !sasToken) {
+                showStatus('Please connect to Azure first!', 'error');
+                return;
+            }
+
+            // Request motion sensor permission
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission !== 'granted') {
+                    showStatus('❌ Motion permission denied', 'error');
+                    return;
+                }
+            }
+
+            isDetecting = true;
+            motionData = [];
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            document.getElementById('detectionDisplay').textContent = 'Detecting...';
+            
+            addLog('▶ Motion detection started');
+            showStatus('🎯 Detecting motion...', 'info');
+
+            // Start listening to motion events
+            window.addEventListener('devicemotion', handleMotion);
+        }
+
+        function stopDetection() {
+            isDetecting = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('detectionDisplay').textContent = 'Stopped';
+            
+            addLog('⏹ Motion detection stopped');
+            showStatus('Stopped', 'info');
+        }
+
+        function handleMotion(event) {
+            if (!isDetecting) return;
+
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+
+            // Collect data (x, y, z)
+            motionData.push(acc.x || 0, acc.y || 0, acc.z || 0);
+
+            // When we have enough data, classify
+            if (motionData.length >= WINDOW_SIZE) {
+                classifyMotion();
+                // Slide window (keep last 50% of data)
+                motionData = motionData.slice(Math.floor(WINDOW_SIZE / 2));
+            }
+        }
+
+        async function classifyMotion() {
+            try {
+                const result = classifier.classify(motionData, false);
+                
+                // Find highest confidence result
+                let maxResult = result.results[0];
+                for (let r of result.results) {
+                    if (r.value > maxResult.value) {
+                        maxResult = r;
+                    }
+                }
+
+                const motion = maxResult.label;
+                const confidence = (maxResult.value * 100).toFixed(1);
+
+                // Update display
+                document.getElementById('detectionDisplay').textContent = 
+                    `${motion.toUpperCase()} (${confidence}%)`;
+
+                // Only send if motion changed and confidence > 70%
+                if (motion !== lastMotion && maxResult.value > 0.7) {
+                    lastMotion = motion;
+                    motionCounts[motion]++;
+                    
+                    // Update counts
+                    document.getElementById('shakeCount').textContent = motionCounts.shake;
+                    document.getElementById('tapCount').textContent = motionCounts.tap;
+                    document.getElementById('stillCount').textContent = motionCounts.still;
+                    
+                    // Send to Azure
+                    await sendToAzure(motion, maxResult.value);
+                }
+                
+            } catch (error) {
+                addLog('✗ Classification error: ' + error.message);
+            }
+        }
+
+        async function sendToAzure(motion, confidence) {
+            try {
+                const message = {
+                    deviceId: deviceId,
+                    motion: motion,
+                    confidence: confidence,
+                    timestamp: new Date().toISOString(),
+                    messageId: ++messagesSent
+                };
+
+                const url = `https://${hostname}/devices/${deviceId}/messages/events?api-version=2020-03-13`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sasToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(message)
+                });
+
+                if (response.ok) {
+                    addLog(`→ Sent: ${motion} (${(confidence*100).toFixed(0)}%) #${messagesSent}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+            } catch (error) {
+                addLog('✗ Send failed: ' + error.message);
+            }
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${time}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>
