@@ -127,28 +127,6 @@
             border-left: 2px solid #667eea;
             padding-left: 8px;
         }
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .stat-box {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .stat-label {
-            font-size: 11px;
-            color: #666;
-            margin-top: 3px;
-        }
     </style>
 </head>
 <body>
@@ -168,20 +146,7 @@
             Waiting to start...
         </div>
 
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-value" id="shakeCount">0</div>
-                <div class="stat-label">Shakes</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="tapCount">0</div>
-                <div class="stat-label">Taps</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-value" id="stillCount">0</div>
-                <div class="stat-label">Still</div>
-            </div>
-        </div>
+        <!-- Removed stats section here -->
 
         <div class="log" id="log"></div>
     </div>
@@ -191,16 +156,13 @@
     <script src="run-impulse.js"></script>
 
     <script>
-        // Azure Function URL
         const AZURE_FUNCTION_URL = 'https://motion-forwarder-linux-cvbef3c8dqbaashs.francecentral-01.azurewebsites.net/api/motion?code=BuIGAVM-nQQ8apwKAcA_rff1IMUKB1mhX5yOoNDSVzE2AzFuxRZnIg==';
 
-        // Motion Detection
         let classifier;
         let isDetecting = false;
         let motionData = [];
-        const WINDOW_SIZE = 180; // 3 seconds at 60Hz
+        const WINDOW_SIZE = 180; 
         let lastMotion = 'still';
-        let motionCounts = { shake: 0, tap: 0, still: 0 };
         let messagesSent = 0;
 
         async function startDetection() {
@@ -214,7 +176,6 @@
                 addLog('Model loaded successfully');
                 showStatus('Model loaded! Starting detection...', 'success');
 
-                // Request motion sensor permission
                 if (typeof DeviceMotionEvent.requestPermission === 'function') {
                     const permission = await DeviceMotionEvent.requestPermission();
                     if (permission !== 'granted') {
@@ -232,7 +193,6 @@
                 addLog('Motion detection started');
                 showStatus('Detecting motion...', 'info');
 
-                // Start listening to motion events
                 window.addEventListener('devicemotion', handleMotion);
 
             } catch (error) {
@@ -259,13 +219,10 @@
             const acc = event.accelerationIncludingGravity;
             if (!acc) return;
 
-            // Collect data (x, y, z)
             motionData.push(acc.x || 0, acc.y || 0, acc.z || 0);
 
-            // When we have enough data, classify
             if (motionData.length >= WINDOW_SIZE) {
                 classifyMotion();
-                // Slide window (keep last 50% of data)
                 motionData = motionData.slice(Math.floor(WINDOW_SIZE / 2));
             }
         }
@@ -274,32 +231,19 @@
             try {
                 const result = classifier.classify(motionData, false);
 
-                // Find highest confidence result
                 let maxResult = result.results[0];
                 for (let r of result.results) {
-                    if (r.value > maxResult.value) {
-                        maxResult = r;
-                    }
+                    if (r.value > maxResult.value) maxResult = r;
                 }
 
                 const motion = maxResult.label;
                 const confidence = (maxResult.value * 100).toFixed(1);
 
-                // Update display
-                document.getElementById('detectionDisplay').textContent = 
+                document.getElementById('detectionDisplay').textContent =
                     `${motion.toUpperCase()} (${confidence}%)`;
 
-                // Only send if motion changed and confidence > 70%
                 if (motion !== lastMotion && maxResult.value > 0.7) {
                     lastMotion = motion;
-                    motionCounts[motion]++;
-
-                    // Update counts
-                    document.getElementById('shakeCount').textContent = motionCounts.shake;
-                    document.getElementById('tapCount').textContent = motionCounts.tap;
-                    document.getElementById('stillCount').textContent = motionCounts.still;
-
-                    // Send to Azure via Function
                     await sendToAzure(motion, maxResult.value);
                 }
 
@@ -321,9 +265,7 @@
 
                 const response = await fetch(AZURE_FUNCTION_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(message)
                 });
 
@@ -351,17 +293,14 @@
             entry.className = 'log-entry';
             entry.textContent = `[${time}] ${message}`;
             log.insertBefore(entry, log.firstChild);
-
-            while (log.children.length > 20) {
-                log.removeChild(log.lastChild);
-            }
+            while (log.children.length > 20) log.removeChild(log.lastChild);
         }
 
-        // Initial log
         addLog('Ready! Click Start Detection to begin.');
     </script>
 </body>
 </html>
+
 
 
 
